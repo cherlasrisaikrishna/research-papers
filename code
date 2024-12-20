@@ -1,0 +1,143 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import csv
+import os
+class SkillResearchFinder:
+    def __init__(self, master):
+        self.master = master
+        master.title("Skill Research Finder")
+        master.geometry("1000x700")
+        master.configure(bg='#f0f0f0')
+
+        # Title
+        title_label = tk.Label(
+            master, 
+            text="Skill Research Explorer", 
+            font=("Helvetica", 18, "bold"), 
+            bg='#f0f0f0', 
+            fg='#2c3e50'
+        )
+        title_label.pack(pady=15)
+
+        # Frame for search
+        search_frame = tk.Frame(master, bg='#f0f0f0')
+        search_frame.pack(pady=10)
+
+        tk.Label(
+            search_frame, 
+            text="Enter Skill:", 
+            font=("Arial", 12), 
+            bg='#f0f0f0', 
+            fg='#2c3e50'
+        ).pack(side=tk.LEFT, padx=5)
+
+        self.skill_entry = tk.Entry(
+            search_frame, 
+            width=50, 
+            font=("Arial", 12), 
+            bg='white', 
+            relief=tk.RIDGE, 
+            borderwidth=2
+        )
+        self.skill_entry.pack(side=tk.LEFT, padx=5)
+
+        # Search Button with custom style
+        search_button = tk.Button(
+            search_frame, 
+            text="Find Research", 
+            command=self.find_research,
+            bg='#3498db', 
+            fg='white', 
+            font=("Arial", 10, "bold"),
+            activebackground='#2980b9',
+            relief=tk.RAISED
+        )
+        search_button.pack(side=tk.LEFT, padx=5)
+
+        # Results Treeview with custom style
+        style = ttk.Style()
+        style.theme_use('clam')
+        style.configure(
+            "Custom.Treeview", 
+            background="#ecf0f1", 
+            foreground="black", 
+            rowheight=25, 
+            fieldbackground="#ecf0f1"
+        )
+        style.map(
+            "Custom.Treeview", 
+            background=[('selected', '#3498db')], 
+            foreground=[('selected', 'white')]
+        )
+
+        self.results_tree = ttk.Treeview(
+            master, 
+            columns=("Project", "Research Paper", "Abstract"), 
+            show="headings", 
+            style="Custom.Treeview"
+        )
+        
+        # Configure column headings
+        self.results_tree.heading("Project", text="Project Ideas", anchor=tk.CENTER)
+        self.results_tree.heading("Research Paper", text="Research Papers", anchor=tk.CENTER)
+        self.results_tree.heading("Abstract", text="Abstract", anchor=tk.CENTER)
+        
+        self.results_tree.column("Project", width=250, anchor=tk.CENTER)
+        self.results_tree.column("Research Paper", width=250, anchor=tk.CENTER)
+        self.results_tree.column("Abstract", width=400, anchor=tk.CENTER)
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(master, orient=tk.VERTICAL, command=self.results_tree.yview)
+        self.results_tree.configure(yscroll=scrollbar.set)
+        
+        self.results_tree.pack(padx=20, pady=10, expand=True, fill='both')
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+    def find_research(self):
+        # Clear previous results
+        for i in self.results_tree.get_children():
+            self.results_tree.delete(i)
+        
+        skill = self.skill_entry.get().strip()
+        
+        if not skill:
+            messagebox.showwarning("Input Required", "Please enter a skill.")
+            return
+        # Ensure CSV exists
+        if not os.path.exists('skills_projects_dataset.csv'):
+            messagebox.showerror("Error", "Dataset file not found.")
+            return
+        
+        # Track unique project ideas
+        #unique_projects = set()
+        
+        # Read and filter CSV
+        try:
+            with open('skills_projects_dataset.csv', 'r', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile)
+                found_results = False
+                
+                for row in reader:
+                    if skill.lower() in row['Skill'].lower():
+                        project = row['Project Ideas']
+                        self.results_tree.insert("", "end", values=(
+                                project, 
+                                row['Research Papers'], 
+                                row['Abstract']
+                            ))
+                        
+                        found_results = True
+                
+                if not found_results:
+                    messagebox.showinfo("No Results", f"No results found for skill: {skill}")
+        
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
+
+def main():
+    root = tk.Tk()
+    app = SkillResearchFinder(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
